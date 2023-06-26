@@ -1,0 +1,45 @@
+#################################### Ячейка 1 ####################################
+#установка библиотек
+!pip install kafka-python
+
+import json
+import random
+
+from kafka import KafkaConsumer
+from json import loads
+from kafka.structs import TopicPartition
+
+#################################### Ячейка 2 ####################################
+#объявление потребителя Kafka
+consumer = KafkaConsumer(
+  bootstrap_servers=['striking-snipe-11469-eu1-kafka.upstash.io:9092'],
+  sasl_mechanism='SCRAM-SHA-256',
+  security_protocol='SASL_SSL',
+  sasl_plain_username='c3RyaWtpb*****', #ваш username здесь
+  sasl_plain_password='*****', #ваш password здесь
+  group_id='1',
+  auto_offset_reset='earliest',
+  enable_auto_commit=True
+)
+
+# подписка потребителя на определенный раздел topic partition
+topic='myNewTopic' #ваш topic здесь
+topic_partition_0 = TopicPartition(topic, 0)   # указываем имя топика и номер раздела: #все вопросы записывать в раздел 0
+topic_partition_1 = TopicPartition(topic, 1)   # указываем имя топика и номер раздела: #все корпоративные заявки записывать в раздел 1
+topic_partition_2 = TopicPartition(topic, 2)   # указываем имя топика и номер раздела: #заявки от частных лиц записывать в раздел 2
+consumer.assign([topic_partition_0, topic_partition_1, topic_partition_2])
+
+#################################### Ячейка 3 ####################################
+#читаем сообщения с топика kafka
+for message in consumer:
+  payload=message.value.decode("utf-8")
+  data=json.loads(payload)
+
+  #вывод исходных данных в консоль Goggle Colab
+  print(f' [x] Partition {message.partition}')
+  print(data)
+
+#################################### Ячейка 4 ####################################
+#отписываем потребителя и закрываем соединение
+consumer.unsubscribe()
+consumer.close()

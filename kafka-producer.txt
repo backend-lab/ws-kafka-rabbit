@@ -1,0 +1,63 @@
+#################################### Ячейка 1 ####################################
+#установка библиотек
+!pip install kafka-python
+
+#импорт модулей
+import json
+import random
+from datetime import datetime
+import time
+from time import sleep
+from kafka import KafkaProducer#%%
+
+#################################### Ячейка 2 ####################################
+# объявление продюсера Kafka и параметров подключения
+producer = KafkaProducer(
+  bootstrap_servers=['striking-snipe-11469-eu1-kafka.upstash.io:9092'],
+  sasl_mechanism='SCRAM-SHA-256',
+  security_protocol='SASL_SSL',
+  sasl_plain_username='c3RyaWtpbmctc****', #ваш username здесь
+  sasl_plain_password='*******', #ваш password здесь
+  value_serializer=lambda v: json.dumps(v).encode('utf-8')
+)
+
+# задаем топик Kafka
+topic = 'myNewTopic' #ваш topic здесь
+
+with open('/content/json_data.json', 'r') as file:
+  for line in file:
+    #читаем построчно сообщения из файла data.json
+    message = json.loads(line)
+
+    #создаем ключ (key) на основе сообщения - для Kafka
+    messageKey = str.encode(message['subject'] + message['name'])
+
+    #логика роутинга
+    if message['subject']=='question':
+       partition = 0 #все вопросы записывать в раздел 0
+    else:
+      #все корпоративные заявки записывать в раздел 1
+      #заявки от частных лиц записывать в раздел 2
+      isCorp = (message['isCorp']==1)
+      partition = 1 if isCorp else 2
+
+    #отправка сообщений в брокер
+    future = producer.send(
+        topic,
+        value = message,
+        partition = partition,
+        key = messageKey
+    )
+
+    recordMetadata = future.get(timeout=60)
+
+    #выводим в консоль опубликованное ответ Kafka о публикации
+    print(f' [x] Sent {recordMetadata}')
+    print(f' [x] Payload {message}')
+
+    #повтор через 1 секунду
+    time.sleep(1)
+
+#################################### Ячейка 3 ####################################
+#Закрываем соединения
+producer.close()
