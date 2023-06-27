@@ -17,7 +17,7 @@ import gspread
 from google.auth import default
 creds, _ = default()
 
-###################################################  соединение с google-таблицами
+#соединение с google-таблицами
 #Google Sheets Autentificate
 googleClient = gspread.authorize(creds)
 
