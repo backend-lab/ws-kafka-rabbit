@@ -40,7 +40,7 @@ consumer = KafkaConsumer(
 )
 
 # подписка потребителя на определенный раздел topic partition
-topic='myNewTopic' #ваш topic здесь
+topic = 'myNewTopic' #ваш topic здесь
 topic_partition_2 = TopicPartition(topic, 0)   # указываем имя топика и номер раздела: #все вопросы записывать в раздел 0
 consumer.assign([topic_partition_0])
 
