@@ -1,0 +1,43 @@
+#################################### Ячейка 1 ####################################
+#установка библиотек
+!pip install pika
+
+#импорт модулей
+import pika
+import json
+
+#################################### Ячейка 2 ####################################
+# Подключение к серверу RabbitMQ server в облачной платформе cloudamqp.com
+connection = pika.BlockingConnection(pika.URLParameters(
+    'amqps://*****') #ваш кластер здесь
+)
+channel = connection.channel()
+
+#объявление очереди RQM
+inputsQueue = channel.queue_declare(queue = 'InputsQueue', durable = True)
+
+#определяем функцию обратного вызова для потребления сообщений из очереди RQM
+def on_message_recieved(ch, method, properties, body):
+ #обработка полезной нагрузки в JSON
+ message = json.loads(body)
+ print("Входящее обращение N:", message['id'],
+       "клиент: ", message['name'],
+       "subject: ", message['subject'],
+       "тема: ", message['theme'],
+       "содержание: ", message['content']
+ )
+
+#################################### Ячейка 3 ####################################
+# Потребляем данные из RabbitMQ
+while True:
+ print('Waiting for messages. To exit press CTRL+C')
+
+ #привязка к очереди обменника RQM
+ channel.basic_consume(queue=inputsQueue.method.queue, on_message_callback=on_message_recieved, auto_ack=True)
+
+ channel.start_consuming()
+
+#################################### Ячейка 4 ###########################################
+# Закрываем соединения
+channel.close()
+connection.close()
