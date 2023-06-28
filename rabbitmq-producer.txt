@@ -1,0 +1,51 @@
+#################################### Ячейка 1 ####################################
+#установка библиотеки
+!pip install pika
+
+#импорт модулей
+import pika
+import json
+import time
+
+#################################### Ячейка 2 ####################################
+# Подключение к серверу RabbitMQ server в облачной платформе cloudamqp.com
+connection = pika.BlockingConnection(pika.URLParameters(
+    'amqps://qcsrsskj:DveBiTcL9vikUNgeHr7WUkQ1Y1q7Ql3a@rattlesnake.rmq.cloudamqp.com/qcsrsskj')
+)
+channel = connection.channel()
+
+# объявление обменника, заранее созданного в cloudamqp.com
+exchange = 'InputsFanoutExchange'
+exchange_type = 'fanout'
+channel.exchange_declare(exchange, exchange_type, durable=True)
+
+#################################### Ячейка 3 ####################################
+with open('/content/json_data_rabbit.json', 'r') as file:
+  for line in file:
+    #читаем построчно сообщения из файла data.json
+    message = json.loads(line)
+
+    #создаем ключ маршрутизации для RabbitMQ
+    messageKey = str.encode(message['subject'])
+
+    #отправка сообщения в обменник RabbitMQ с ключом маршрутизации и свойствами (заголовок)
+    channel.basic_publish(
+        exchange,
+        routing_key = messageKey,
+        body = line,
+        properties = pika.BasicProperties(headers = {'subject': message['subject'], 'theme': message['theme']})
+      )
+
+    #вывод отладочной информации
+    print(f' [x] routing_key {messageKey}')
+    headers = {'subject': message['subject'], 'theme': message['theme']}
+    print(f' [x] Header {headers}')
+    print(f' [x] Sent {message}')
+
+    #повтор через 1 секунду
+    time.sleep(1)
+
+#################################### Ячейка 4 ####################################
+#закрываем канал и соединение
+channel.close()
+connection.close()
