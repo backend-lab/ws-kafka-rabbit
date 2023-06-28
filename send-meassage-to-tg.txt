@@ -1,0 +1,33 @@
+#################################### Ячейка 1 ####################################
+# импорт модулей
+import requests
+from datetime import datetime
+
+# Создать бот и получить для него TG-токен как описано тут https://medium.com/codex/using-python-to-send-telegram-messages-in-3-simple-steps-419a8b5e5e2
+# 1.Open your telegram app and search for BotFather. (@BotFather (https://t.me/BotFather) - a built-in Telegram bot that helps users create custom Telegram bots)
+# 2.Type /newbot to create a new bot
+# 3.Give your bot a name & a username
+# 4.Copy your new Telegram bot’s url & token to access HTTP API
+
+#задаем свой TG-токен
+TOKEN = "6125193*****" #ваш токен здесь
+
+#################################### Ячейка 2 ####################################
+# получаем chat_id чата. Если сообщений в чате еще нет - перейдите в чат и начните диалог
+# выполняем ячейку один раз для одного диалога
+url = f"https://api.telegram.org/bot{TOKEN}/getUpdates"
+print(requests.get(url).json())
+
+#################################### Ячейка 3 ####################################
+# отправка сообщений в TG-чат
+
+# задаем chat_id своего TG-чата
+chat_id = "******" #копируем из результата выполнения ячейки 2
+
+# генерация данных сообщения
+now = datetime.now()
+message = ("Ваше вообщение здесь" + now.strftime("%m/%d/%Y, %H:%M:%S"))
+
+# отправка данных в ТГ-чат
+url = f"https://api.telegram.org/bot{TOKEN}/sendMessage?chat_id={chat_id}&text={message}"
+print(requests.get(url).json())
