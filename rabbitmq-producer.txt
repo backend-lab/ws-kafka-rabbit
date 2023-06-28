@@ -10,7 +10,7 @@ import time
 #################################### Ячейка 2 ####################################
 # Подключение к серверу RabbitMQ server в облачной платформе cloudamqp.com
 connection = pika.BlockingConnection(pika.URLParameters(
-    'amqps://qcsrsskj:DveBiTcL9vikUNgeHr7WUkQ1Y1q7Ql3a@rattlesnake.rmq.cloudamqp.com/qcsrsskj')
+   'amqps://*****') #ваш кластер здесь
 )
 channel = connection.channel()
 
