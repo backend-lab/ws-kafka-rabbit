@@ -1,0 +1,80 @@
+#################################### Ячейка 1 ####################################
+#установка библиотек
+!pip install pika
+!pip install kafka-python
+
+#импорт модулей
+import pika
+import json
+import random
+import time
+from time import sleep
+from kafka import KafkaProducer
+
+#################################### Ячейка 2 ####################################
+# объявление продюсера Kafka и параметров подключения
+producer = KafkaProducer(
+  bootstrap_servers=['striking-snipe-11469-eu1-kafka.upstash.io:9092'],
+  sasl_mechanism='SCRAM-SHA-256',
+  security_protocol='SASL_SSL',
+  sasl_plain_username='c3RyaWtpbmctc****', #ваш username здесь
+  sasl_plain_password='*******', #ваш password здесь
+  value_serializer=lambda v: json.dumps(v).encode('utf-8')
+)
+
+# задаем топик Kafka
+KAFKA_TOPIC = 'my-topik'
+
+#################################### Ячейка 3 ####################################
+
+RABBIT_URL = 'amqps://****' #Ваши данные для подключения в облачной платформе cloudamqp.com
+QUEUE_NAME = 'InputsQueue'  #Имя вашей очереди
+
+# Подключение к серверу RabbitMQ server в облачной платформе cloudamqp.com
+connection = pika.BlockingConnection(pika.URLParameters(RABBIT_URL))
+channel = connection.channel()
+
+inputsQueue = channel.queue_declare(QUEUE_NAME, durable = True)
+
+#определяем функцию обратного вызова для потребления сообщений из очереди RQM
+def on_message_recieved(ch, method, properties, body):
+ #обработка полезной нагрузки в JSON
+ message = json.loads(body)
+ print("Входящее обращение N:", message['id'],
+       "клиент: ", message['name'],
+       "subject: ", message['subject'],
+       "тема: ", message['theme'],
+       "содержание: ", message['content']
+ )
+
+ id = message['id']
+ name = message['name']
+ subject = message['subject']
+ content = message['content']
+
+ #задаем ключ партиционирования для Kafka
+ message_key = str.encode(subject + name)
+
+ #создаем полезную нагрузку в JSON
+ data = {'id': id, 'name': name, 'subject': subject, 'content': content}
+
+ #публикуем данные в Kafka
+ future = producer.send(KAFKA_TOPIC, value = data, key = message_key)
+ record_metadata = future.get(timeout=60)
+
+ print(f' [x] Sent {record_metadata}')
+
+#################################### Ячейка 4 ###########################################
+#бесконечный цикл потребления и публикации
+while True:
+
+  #потребляем данные из RabbitMQ
+  print('Waiting for messages. To exit press CTRL+C')
+  channel.basic_consume(QUEUE_NAME, on_message_callback = on_message_recieved, auto_ack=True)
+
+  channel.start_consuming()
+
+#################################### Ячейка 5 ###########################################
+# Закрываем соединения
+channel.close()
+connection.close()
